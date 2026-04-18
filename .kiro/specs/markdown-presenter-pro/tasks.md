@@ -320,6 +320,115 @@ Este plan convierte el diseño de Clean Architecture en tareas incrementales de 
 - [x] 13. Checkpoint final — Verificar todo el sistema
   - Asegurar que todas las pruebas pasan, preguntar al usuario si surgen dudas.
 
+- [ ] 14. Implementar Tema Oscuro y Claro
+  - [ ] 14.1 Configurar modo oscuro de Tailwind CSS con `@custom-variant` en `src/index.css`
+    - Agregar la directiva `@custom-variant dark (&:where(.dark, .dark *));` al archivo `src/index.css`
+    - Esto habilita el prefijo `dark:` de Tailwind basado en la clase `dark` en el elemento `<html>`
+    - _Requerimientos: 15.1, 15.2, 15.3_
+
+  - [ ] 14.2 Crear contexto `ThemeProvider` con hook `useTheme`
+    - Crear `src/presentation/ThemeProvider.tsx`
+    - Implementar `ThemeProvider` que lea la preferencia almacenada via `ConfigurationUseCase.getTheme()`
+    - Implementar `toggleTheme()` y `setTheme()` que persistan via `ConfigurationUseCase.setTheme()`
+    - Aplicar/remover la clase `dark` en `document.documentElement` al cambiar tema
+    - Implementar hook `useTheme()` que exponga `theme`, `toggleTheme` y `setTheme`
+    - Aplicar tema claro (`light`) como predeterminado si no hay preferencia almacenada
+    - _Requerimientos: 15.5, 15.6, 15.7, 15.8_
+
+  - [ ] 14.3 Crear componente `ThemeToggle`
+    - Crear `src/presentation/ThemeToggle.tsx`
+    - Implementar botón de alternancia que muestre icono de sol (tema claro activo) o luna (tema oscuro activo)
+    - Consumir `useTheme()` para leer y cambiar el tema
+    - _Requerimientos: 15.4_
+
+  - [ ] 14.4 Extender `ConfigurationUseCase` con soporte de idioma (`getLocale`/`setLocale`)
+    - Agregar tipo `SupportedLocale = 'es' | 'en'` en `src/application/ConfigurationUseCase.ts`
+    - Agregar campo `locale: SupportedLocale` a la interfaz `UserConfiguration`
+    - Agregar `locale: 'es'` al `DEFAULT_CONFIG`
+    - Implementar métodos `getLocale(): SupportedLocale` y `setLocale(locale: SupportedLocale): void`
+    - _Requerimientos: 16.5, 16.6, 16.7_
+
+  - [ ] 14.5 Actualizar `App.tsx` para envolver con `ThemeProvider`
+    - Importar `ThemeProvider` en `src/App.tsx`
+    - Envolver el árbol de componentes con `<ThemeProvider configUseCase={configUseCase}>`
+    - Instanciar `ConfigurationUseCase` con `LocalPersistenceAdapter` a nivel de App
+    - Actualizar clases CSS del contenedor raíz para usar `dark:bg-gray-900 dark:text-gray-100`
+    - _Requerimientos: 15.5, 15.9_
+
+  - [ ] 14.6 Actualizar componentes existentes con clases `dark:` de Tailwind
+    - Actualizar `SlideViewer` con estilos `dark:` para fondo, texto y contenido renderizado
+    - Actualizar `FloatingDock` con estilos `dark:` para fondo del dock e iconos
+    - Actualizar `LinearNavigator` con estilos `dark:` para botones y estados
+    - Actualizar `PresenterMode` con estilos `dark:` para paneles, cronómetro y contador
+    - Actualizar `PresentationLoader` con estilos `dark:` para pantalla de carga y mensajes
+    - Integrar `ThemeToggle` en la interfaz principal (FloatingDock o barra superior)
+    - _Requerimientos: 15.2, 15.3, 15.9_
+
+  - [ ]\* 14.7 Escribir prueba de propiedad para persistencia de tema (P15)
+    - **Propiedad 15: Round-trip de persistencia de tema**
+    - Usar `fc.constantFrom('light', 'dark')` como generador
+    - Verificar que `setTheme(t)` seguido de `getTheme()` retorna `t`
+    - **Valida: Requerimiento 15.6**
+
+- [ ] 15. Implementar Internacionalización (i18n)
+  - [ ] 15.1 Crear archivos de traducción para español e inglés
+    - Crear directorio `src/i18n/locales/`
+    - Crear `src/i18n/locales/es.json` con todas las cadenas de la interfaz en español
+    - Crear `src/i18n/locales/en.json` con todas las cadenas de la interfaz en inglés
+    - Incluir claves para: navegación, modo presentador, cargador, tema, idioma, errores
+    - _Requerimientos: 16.1, 16.2, 16.8_
+
+  - [ ] 15.2 Crear contexto `I18nProvider` con hook `useTranslation`
+    - Crear `src/presentation/I18nProvider.tsx`
+    - Implementar `I18nProvider` que cargue archivos de traducción desde `src/i18n/locales/{locale}.json`
+    - Implementar función `t(key)` que resuelva claves con fallback a español si falta una clave
+    - Implementar `setLocale()` que persista la preferencia via `ConfigurationUseCase.setLocale()`
+    - Leer preferencia almacenada al iniciar via `ConfigurationUseCase.getLocale()`
+    - Aplicar español (`es`) como idioma predeterminado si no hay preferencia almacenada
+    - _Requerimientos: 16.2, 16.4, 16.5, 16.6, 16.7, 16.10_
+
+  - [ ] 15.3 Crear componente `LanguageSelector`
+    - Crear `src/presentation/LanguageSelector.tsx`
+    - Implementar selector que muestre los idiomas disponibles (Español, English)
+    - Consumir `useTranslation()` para leer y cambiar el idioma activo
+    - _Requerimientos: 16.3_
+
+  - [ ] 15.4 Extender `ConfigurationUseCase` con soporte de idioma (si no se completó en 14.4)
+    - Verificar que los métodos `getLocale()` y `setLocale()` están implementados
+    - Verificar que `DEFAULT_CONFIG` incluye `locale: 'es'`
+    - _Requerimientos: 16.5, 16.6, 16.7_
+
+  - [ ] 15.5 Actualizar `App.tsx` para envolver con `I18nProvider`
+    - Importar `I18nProvider` en `src/App.tsx`
+    - Envolver el árbol de componentes con `<I18nProvider configUseCase={configUseCase}>` (dentro de `ThemeProvider`)
+    - _Requerimientos: 16.4_
+
+  - [ ] 15.6 Reemplazar cadenas hardcodeadas en componentes con llamadas a `t()`
+    - Actualizar `LinearNavigator`: botones "Anterior"/"Siguiente"
+    - Actualizar `PresenterMode`: contador "N de M", indicador "Fin de Presentación", cronómetro
+    - Actualizar `PresentationLoader`: botones de selección, mensajes de error
+    - Actualizar `FloatingDock`: tooltips y etiquetas
+    - Actualizar `ThemeToggle`: etiquetas "Tema claro"/"Tema oscuro"
+    - Actualizar `LanguageSelector`: nombres de idiomas
+    - _Requerimientos: 16.4, 16.8, 16.9_
+
+  - [ ]\* 15.7 Escribir prueba de propiedad para cobertura de claves i18n (P17)
+    - **Propiedad 17: Cobertura de claves de traducción entre idiomas**
+    - Cargar `es.json` y `en.json`, verificar que todas las claves de `es.json` existen en `en.json`
+    - **Valida: Requerimiento 16.8**
+
+  - [ ]\* 15.8 Escribir prueba de propiedad para fallback de traducción (P18)
+    - **Propiedad 18: Fallback de traducción al idioma predeterminado**
+    - Generar claves de traducción y simular claves faltantes en un idioma
+    - Verificar que `t(key)` retorna el valor en español cuando la clave falta en el idioma activo
+    - **Valida: Requerimiento 16.10**
+
+- [ ] 16. Checkpoint — Verificar tema e i18n
+  - Asegurar que todas las pruebas pasan, preguntar al usuario si surgen dudas.
+  - Verificar que el tema oscuro/claro se aplica correctamente en todos los componentes.
+  - Verificar que el cambio de idioma actualiza todas las cadenas de la interfaz sin recarga.
+  - Verificar que las preferencias de tema e idioma persisten entre sesiones.
+
 ## Notas
 
 - Las tareas marcadas con `*` son opcionales y pueden omitirse para un MVP más rápido.

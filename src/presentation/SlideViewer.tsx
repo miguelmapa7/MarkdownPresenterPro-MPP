@@ -18,14 +18,18 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({ renderedHtml }) => {
     <div className="flex-1 overflow-auto p-8 md:p-12 lg:p-16">
       <article
         className="prose prose-neutral max-w-none
-          prose-headings:text-gray-800
-          prose-p:text-gray-700
+          prose-headings:text-gray-800 dark:prose-headings:text-gray-100
+          prose-p:text-gray-700 dark:prose-p:text-gray-300
           prose-code:text-sm
           prose-pre:bg-gray-900 prose-pre:text-gray-100
+          dark:prose-pre:bg-gray-800 dark:prose-pre:text-gray-200
           prose-img:rounded-lg prose-img:shadow-md
           prose-table:border-collapse
           prose-th:bg-gray-100 prose-th:p-2
-          prose-td:border prose-td:border-gray-200 prose-td:p-2"
+          dark:prose-th:bg-gray-700 dark:prose-th:text-gray-200
+          prose-td:border prose-td:border-gray-200 prose-td:p-2
+          dark:prose-td:border-gray-600 dark:prose-td:text-gray-300
+          dark:text-gray-200"
         dangerouslySetInnerHTML={{ __html: renderedHtml }}
       />
     </div>

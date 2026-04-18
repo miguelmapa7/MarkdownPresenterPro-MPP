@@ -3,6 +3,9 @@ import type { IPersistenceAdapter } from "@/infrastructure/IPersistenceAdapter";
 /** Posiciones válidas del menú flotante Dock */
 export type DockPosition = "top" | "bottom" | "left" | "right";
 
+/** Idiomas soportados por la aplicación */
+export type SupportedLocale = "es" | "en";
+
 /** Archivo abierto recientemente */
 export interface RecentFile {
   path: string;
@@ -24,6 +27,7 @@ export interface KeyboardShortcutMap {
 export interface UserConfiguration {
   dockPosition: DockPosition;
   theme: "light" | "dark";
+  locale: SupportedLocale;
   recentFiles: RecentFile[];
   keyboardShortcuts: KeyboardShortcutMap;
 }
@@ -32,6 +36,7 @@ export interface UserConfiguration {
 const DEFAULT_CONFIG: UserConfiguration = {
   dockPosition: "bottom",
   theme: "light",
+  locale: "es",
   recentFiles: [],
   keyboardShortcuts: {
     nextSlide: ["ArrowRight", "Space"],
@@ -107,5 +112,17 @@ export class ConfigurationUseCase {
   /** Obtiene los atajos de teclado */
   getKeyboardShortcuts(): KeyboardShortcutMap {
     return this.getConfig().keyboardShortcuts;
+  }
+
+  /** Obtiene el idioma preferido del usuario */
+  getLocale(): SupportedLocale {
+    return this.getConfig().locale;
+  }
+
+  /** Cambia el idioma y persiste la preferencia */
+  setLocale(locale: SupportedLocale): void {
+    const config = this.getConfig();
+    config.locale = locale;
+    this.persistence.set(CONFIG_KEY, config);
   }
 }

@@ -1,7 +1,7 @@
 import React from "react";
 import { SlideViewer } from "./SlideViewer";
-import { formatSlideCounter } from "./formatSlideCounter";
 import { useTimer } from "./useTimer";
+import { useTranslation } from "./I18nProvider";
 
 interface PresenterModeProps {
   currentHtml: string;
@@ -27,17 +27,18 @@ export const PresenterMode: React.FC<PresenterModeProps> = ({
   onDeactivate,
 }) => {
   const elapsedSeconds = useTimer(isActive);
+  const { t } = useTranslation();
 
   if (!isActive) return null;
 
   return (
-    <div className="fixed inset-0 z-40 flex bg-gray-900">
-      <div className="flex-[7] bg-white overflow-auto">
+    <div className="fixed inset-0 z-40 flex bg-gray-900 dark:bg-gray-950">
+      <div className="flex-[7] bg-white dark:bg-gray-900 overflow-auto">
         <SlideViewer renderedHtml={currentHtml} />
       </div>
 
-      <div className="flex-[3] flex flex-col bg-gray-800 text-white p-4 gap-4">
-        <div className="flex-1 rounded-lg overflow-auto bg-gray-700 p-2">
+      <div className="flex-[3] flex flex-col bg-gray-800 dark:bg-gray-850 text-white p-4 gap-4">
+        <div className="flex-1 rounded-lg overflow-auto bg-gray-700 dark:bg-gray-800 p-2">
           {nextHtml ? (
             <div
               className="prose prose-invert prose-sm max-w-none scale-75 origin-top-left"
@@ -45,7 +46,7 @@ export const PresenterMode: React.FC<PresenterModeProps> = ({
             />
           ) : (
             <div className="flex items-center justify-center h-full text-gray-400 text-lg font-medium">
-              Fin de Presentación
+              {t("presenter.endOfPresentation")}
             </div>
           )}
         </div>
@@ -53,15 +54,18 @@ export const PresenterMode: React.FC<PresenterModeProps> = ({
         <div className="flex items-center justify-between text-sm">
           <span className="font-mono text-lg">{formatTime(elapsedSeconds)}</span>
           <span className="text-gray-300">
-            {formatSlideCounter(currentIndex, totalSlides)}
+            {t("presenter.slideCounter", {
+              current: String(currentIndex + 1),
+              total: String(totalSlides),
+            })}
           </span>
         </div>
 
         <button
           onClick={onDeactivate}
-          className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-sm transition-colors"
+          className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-sm transition-colors"
         >
-          Salir del Modo Presentador
+          {t("presenter.exit")}
         </button>
       </div>
     </div>

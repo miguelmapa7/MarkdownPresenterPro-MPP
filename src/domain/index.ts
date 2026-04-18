@@ -8,4 +8,4 @@ export type { SlideChangedEvent, ISlideObserver } from "./Presentation";
 export { MarkdownParser } from "./MarkdownParser";
 export type { IMarkdownParser } from "./MarkdownParser";
 export { IconResolver } from "./IconResolver";
-export type { IIconResolver, IconResult } from "./IconResolver";
+export type { IIconResolver, IconResult, IconMode } from "./IconResolver";

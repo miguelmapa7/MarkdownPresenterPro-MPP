@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback } from "react";
+import { useTranslation } from "./I18nProvider";
 
 interface LinearNavigatorProps {
   /** Si se puede avanzar a la siguiente diapositiva */
@@ -24,6 +25,8 @@ export const LinearNavigator: React.FC<LinearNavigatorProps> = ({
   onNext,
   onPrevious,
 }) => {
+  const { t } = useTranslation();
+
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       switch (event.key) {
@@ -56,23 +59,27 @@ export const LinearNavigator: React.FC<LinearNavigatorProps> = ({
       <button
         onClick={onPrevious}
         disabled={!canGoPrevious}
-        aria-label="Diapositiva anterior"
+        aria-label={t("nav.previousSlide")}
         className="px-4 py-2 rounded-lg text-sm font-medium transition-colors
           enabled:bg-gray-200 enabled:hover:bg-gray-300 enabled:text-gray-700
-          disabled:bg-gray-100 disabled:text-gray-300 disabled:cursor-not-allowed"
+          disabled:bg-gray-100 disabled:text-gray-300 disabled:cursor-not-allowed
+          dark:enabled:bg-gray-700 dark:enabled:hover:bg-gray-600 dark:enabled:text-gray-200
+          dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
       >
-        ← Anterior
+        {t("nav.previousArrow")}
       </button>
 
       <button
         onClick={onNext}
         disabled={!canGoNext}
-        aria-label="Siguiente diapositiva"
+        aria-label={t("nav.nextSlide")}
         className="px-4 py-2 rounded-lg text-sm font-medium transition-colors
           enabled:bg-gray-200 enabled:hover:bg-gray-300 enabled:text-gray-700
-          disabled:bg-gray-100 disabled:text-gray-300 disabled:cursor-not-allowed"
+          disabled:bg-gray-100 disabled:text-gray-300 disabled:cursor-not-allowed
+          dark:enabled:bg-gray-700 dark:enabled:hover:bg-gray-600 dark:enabled:text-gray-200
+          dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
       >
-        Siguiente →
+        {t("nav.nextArrow")}
       </button>
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useRef } from "react";
 import { motion, useSpring, useTransform, type MotionValue } from "framer-motion";
+import { useTranslation } from "./I18nProvider";
 
 interface DockIconProps {
   /** SVG string del icono */
@@ -43,6 +44,7 @@ export const DockIcon: React.FC<DockIconProps> = ({
   title,
 }) => {
   const ref = useRef<HTMLButtonElement>(null);
+  const { t } = useTranslation();
 
   // Distancia del centro del icono al cursor
   const distance = useTransform(mouseX, (val: number) => {
@@ -72,15 +74,18 @@ export const DockIcon: React.FC<DockIconProps> = ({
       style={{ width, height: width }}
       onClick={onClick}
       title={title}
-      aria-label={`Ir a: ${title}`}
+      aria-label={t("nav.slideLabel", { title })}
       className={`flex items-center justify-center rounded-xl transition-colors
         ${
           isActive
             ? "bg-blue-500/20 ring-2 ring-blue-400"
-            : "bg-gray-200/60 hover:bg-gray-300/80"
+            : "bg-gray-200/60 hover:bg-gray-300/80 dark:bg-gray-600/60 dark:hover:bg-gray-500/80"
         }`}
     >
-      <div className="w-3/5 h-3/5" dangerouslySetInnerHTML={{ __html: iconSvg }} />
+      <div
+        className="w-3/5 h-3/5 [&>svg]:w-full [&>svg]:h-full [&>svg]:stroke-gray-600 dark:[&>svg]:stroke-gray-300"
+        dangerouslySetInnerHTML={{ __html: iconSvg }}
+      />
     </motion.button>
   );
 };

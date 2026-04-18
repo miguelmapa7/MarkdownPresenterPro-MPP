@@ -17,6 +17,7 @@ export type { RenderedSlide, RenderStrategy } from "./RenderMarkdownUseCase";
 export { ConfigurationUseCase } from "./ConfigurationUseCase";
 export type {
   DockPosition,
+  SupportedLocale,
   UserConfiguration,
   RecentFile,
   KeyboardShortcutMap,

@@ -33,7 +33,7 @@ export class SlideErrorBoundary extends React.Component<Props, State> {
   render(): React.ReactNode {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center h-full p-8 text-gray-500">
+        <div className="flex flex-col items-center justify-center h-full p-8 text-gray-500 dark:text-gray-400">
           <p className="text-lg font-medium mb-2">Error al renderizar la diapositiva</p>
           <p className="text-sm">{this.state.error?.message ?? "Error desconocido"}</p>
         </div>

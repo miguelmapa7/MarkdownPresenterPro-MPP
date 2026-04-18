@@ -58,6 +58,7 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({
       layout
       className={`fixed z-50 flex items-end gap-2 rounded-2xl
         bg-white/80 backdrop-blur-md shadow-lg border border-gray-200/50
+        dark:bg-gray-800/80 dark:border-gray-700/50
         p-2 ${POSITION_CLASSES[position]}`}
     >
       {slides.map((slide, index) => (

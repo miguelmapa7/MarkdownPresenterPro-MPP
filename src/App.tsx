@@ -1,8 +1,13 @@
-import React, { useReducer, useCallback, useEffect } from "react";
+import { useReducer, useCallback, useEffect, useState } from "react";
 import { Presentation, MarkdownParser, IconResolver } from "@/domain";
-import type { Slide, IconResult } from "@/domain";
-import { RenderMarkdownUseCase, createDefaultRegistry } from "@/application";
+import type { Slide, IconResult, IconMode } from "@/domain";
+import {
+  RenderMarkdownUseCase,
+  createDefaultRegistry,
+  ConfigurationUseCase,
+} from "@/application";
 import type { DockPosition } from "@/application";
+import { LocalPersistenceAdapter } from "@/infrastructure/LocalPersistenceAdapter";
 import {
   SlideViewer,
   SlideErrorBoundary,
@@ -11,6 +16,11 @@ import {
   PresenterMode,
   PresentationLoader,
 } from "@/presentation";
+import { ThemeProvider } from "@/presentation/ThemeProvider";
+import { ThemeToggle } from "@/presentation/ThemeToggle";
+import { I18nProvider } from "@/presentation/I18nProvider";
+import { LanguageSelector } from "@/presentation/LanguageSelector";
+import { IconModeToggle } from "@/presentation/IconModeToggle";
 
 // --- Estado global ---
 
@@ -74,6 +84,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
 const parser = new MarkdownParser();
 const iconResolver = new IconResolver();
 const renderer = new RenderMarkdownUseCase(parser, createDefaultRegistry());
+const persistence = new LocalPersistenceAdapter();
+const configUseCase = new ConfigurationUseCase(persistence);
 
 /**
  * Componente App — Orquestador principal de MPP.
@@ -84,6 +96,13 @@ const renderer = new RenderMarkdownUseCase(parser, createDefaultRegistry());
  */
 export default function App() {
   const [state, dispatch] = useReducer(appReducer, initialState);
+  const [iconMode, setIconMode] = useState<IconMode>(iconResolver.getMode());
+
+  const handleToggleIconMode = useCallback(() => {
+    const newMode: IconMode = iconMode === "varied" ? "content" : "varied";
+    iconResolver.setMode(newMode);
+    setIconMode(newMode);
+  }, [iconMode]);
 
   const { presentation, currentIndex, isPresenterMode, isLoading, error, dockPosition } =
     state;
@@ -101,9 +120,9 @@ export default function App() {
 
   // Resolver iconos para el Dock
   const dockSlides = presentation
-    ? presentation.getSlides().map((slide: Slide) => ({
+    ? presentation.getSlides().map((slide: Slide, index: number) => ({
         metadata: slide.getMetadata(),
-        icon: iconResolver.resolve(slide.getMetadata()) as IconResult,
+        icon: iconResolver.resolve(slide.getMetadata(), index) as IconResult,
       }))
     : [];
 
@@ -176,49 +195,68 @@ export default function App() {
   // Sin presentación: mostrar loader
   if (!presentation) {
     return (
-      <div className="h-screen bg-white">
-        <PresentationLoader onLoad={handleLoad} isLoading={isLoading} error={error} />
-      </div>
+      <ThemeProvider configUseCase={configUseCase}>
+        <I18nProvider configUseCase={configUseCase}>
+          <div className="h-screen bg-white dark:bg-gray-900 transition-colors">
+            <PresentationLoader onLoad={handleLoad} isLoading={isLoading} error={error} />
+            <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+              <LanguageSelector />
+              <ThemeToggle />
+            </div>
+          </div>
+        </I18nProvider>
+      </ThemeProvider>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col bg-white">
-      {/* Modo Presentador (overlay) */}
-      <PresenterMode
-        currentHtml={currentHtml}
-        nextHtml={nextHtml}
-        currentIndex={currentIndex}
-        totalSlides={presentation.getTotalSlides()}
-        isActive={isPresenterMode}
-        onDeactivate={() => dispatch({ type: "TOGGLE_PRESENTER" })}
-      />
+    <ThemeProvider configUseCase={configUseCase}>
+      <I18nProvider configUseCase={configUseCase}>
+        <div className="h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors">
+          {/* Controles globales: idioma, iconos y tema */}
+          <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+            <IconModeToggle mode={iconMode} onToggle={handleToggleIconMode} />
+            <LanguageSelector />
+            <ThemeToggle />
+          </div>
 
-      {/* Vista normal */}
-      {!isPresenterMode && (
-        <>
-          {/* Contenido de la diapositiva */}
-          <SlideErrorBoundary>
-            <SlideViewer renderedHtml={currentHtml} />
-          </SlideErrorBoundary>
-
-          {/* Navegación lineal */}
-          <LinearNavigator
-            canGoNext={currentIndex < presentation.getTotalSlides() - 1}
-            canGoPrevious={currentIndex > 0}
-            onNext={handleNext}
-            onPrevious={handlePrevious}
+          {/* Modo Presentador (overlay) */}
+          <PresenterMode
+            currentHtml={currentHtml}
+            nextHtml={nextHtml}
+            currentIndex={currentIndex}
+            totalSlides={presentation.getTotalSlides()}
+            isActive={isPresenterMode}
+            onDeactivate={() => dispatch({ type: "TOGGLE_PRESENTER" })}
           />
 
-          {/* Dock flotante */}
-          <FloatingDock
-            slides={dockSlides}
-            activeIndex={currentIndex}
-            position={dockPosition}
-            onSlideSelect={handleSlideSelect}
-          />
-        </>
-      )}
-    </div>
+          {/* Vista normal */}
+          {!isPresenterMode && (
+            <>
+              {/* Contenido de la diapositiva */}
+              <SlideErrorBoundary>
+                <SlideViewer renderedHtml={currentHtml} />
+              </SlideErrorBoundary>
+
+              {/* Navegación lineal */}
+              <LinearNavigator
+                canGoNext={currentIndex < presentation.getTotalSlides() - 1}
+                canGoPrevious={currentIndex > 0}
+                onNext={handleNext}
+                onPrevious={handlePrevious}
+              />
+
+              {/* Dock flotante */}
+              <FloatingDock
+                slides={dockSlides}
+                activeIndex={currentIndex}
+                position={dockPosition}
+                onSlideSelect={handleSlideSelect}
+              />
+            </>
+          )}
+        </div>
+      </I18nProvider>
+    </ThemeProvider>
   );
 }
