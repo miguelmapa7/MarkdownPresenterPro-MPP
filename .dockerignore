@@ -1,0 +1,30 @@
+# Dependencias (se instalan dentro del contenedor)
+node_modules
+
+# Artefactos de build
+dist
+src-tauri/target
+
+# Git
+.git
+.gitignore
+
+# IDE y configuraciones locales
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Archivos temporales
+*.log
+.DS_Store
+Thumbs.db
+
+# Docker (evitar recursión)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Kiro specs (no necesarios en la imagen)
+.kiro

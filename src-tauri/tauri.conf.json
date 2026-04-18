@@ -1,0 +1,34 @@
+{
+  "productName": "Markdown Presenter Pro",
+  "version": "0.1.0",
+  "identifier": "com.mpp.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "title": "Markdown Presenter Pro",
+    "windows": [
+      {
+        "title": "Markdown Presenter Pro",
+        "width": 1280,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "fs": {
+      "scope": {
+        "allow": ["**"],
+        "deny": []
+      }
+    }
+  }
+}

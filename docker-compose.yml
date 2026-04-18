@@ -1,0 +1,33 @@
+# =============================================================================
+# Markdown Presenter Pro — Docker Compose
+# =============================================================================
+# Servicios:
+#   app  — Entorno de desarrollo con hot reload
+#   docs — Servidor de documentación técnica
+# =============================================================================
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "1420:1420"
+    environment:
+      - NODE_ENV=development
+
+  docs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "3001:3001"
+    command: ["npx", "serve", "docs", "-l", "3001"]
