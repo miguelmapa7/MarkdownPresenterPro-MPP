@@ -1,4 +1,4 @@
-import { useReducer, useCallback, useEffect, useState } from "react";
+import { useReducer, useCallback, useEffect, useState, useMemo } from "react";
 import { Presentation, MarkdownParser, IconResolver } from "@/domain";
 import type { Slide, IconResult, IconMode } from "@/domain";
 import {
@@ -8,6 +8,8 @@ import {
 } from "@/application";
 import type { DockPosition } from "@/application";
 import { LocalPersistenceAdapter } from "@/infrastructure/LocalPersistenceAdapter";
+import { createAdapters } from "@/infrastructure/AdapterFactory";
+import type { AdapterSet } from "@/infrastructure/AdapterFactory";
 import {
   SlideViewer,
   SlideErrorBoundary,
@@ -15,6 +17,8 @@ import {
   FloatingDock,
   PresenterMode,
   PresentationLoader,
+  WebPresentationLoader,
+  WebModeBadge,
 } from "@/presentation";
 import { ThemeProvider } from "@/presentation/ThemeProvider";
 import { ThemeToggle } from "@/presentation/ThemeToggle";
@@ -88,15 +92,39 @@ const persistence = new LocalPersistenceAdapter();
 const configUseCase = new ConfigurationUseCase(persistence);
 
 /**
+ * Regex para detectar rutas absolutas de imágenes locales en HTML renderizado.
+ * Detecta rutas Unix (/home/..., /usr/...) y Windows (C:\..., D:\...).
+ */
+const LOCAL_IMAGE_REGEX =
+  /(<img\s[^>]*src=["'])(?:\/(?:home|usr|tmp|var|opt|etc|mnt|media)[^"']*|[A-Z]:\\[^"']*)(["'][^>]*>)/gi;
+
+/**
+ * Reemplaza imágenes con rutas absolutas locales por un placeholder informativo.
+ * Las imágenes con URLs remotas (HTTP/HTTPS) y rutas relativas no se modifican.
+ */
+function replaceLocalImages(html: string, placeholderText: string): string {
+  return html.replace(
+    LOCAL_IMAGE_REGEX,
+    `<span class="inline-block px-3 py-1 rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 text-sm">${placeholderText}</span>`
+  );
+}
+
+/**
  * Componente App — Orquestador principal de MPP.
  *
  * Conecta todos los componentes usando useReducer para estado global.
  * Delega lógica de negocio a los casos de uso.
- * No contiene lógica de negocio propia.
+ * Usa AdapterFactory para crear adaptadores según el entorno (Tauri o Web).
  */
 export default function App() {
   const [state, dispatch] = useReducer(appReducer, initialState);
   const [iconMode, setIconMode] = useState<IconMode>(iconResolver.getMode());
+  const [adapters, setAdapters] = useState<AdapterSet | null>(null);
+
+  // Inicializar adaptadores según el entorno detectado
+  useEffect(() => {
+    createAdapters().then(setAdapters);
+  }, []);
 
   const handleToggleIconMode = useCallback(() => {
     const newMode: IconMode = iconMode === "varied" ? "content" : "varied";
@@ -109,14 +137,32 @@ export default function App() {
 
   // Renderizar diapositiva actual
   const currentSlide = presentation?.getSlideAt(currentIndex) ?? null;
-  const currentHtml = currentSlide ? renderer.render(currentSlide).html : "";
+  const rawCurrentHtml = currentSlide ? renderer.render(currentSlide).html : "";
+
+  // En modo web, reemplazar imágenes locales con placeholder
+  const currentHtml = useMemo(() => {
+    if (adapters?.isWeb && rawCurrentHtml) {
+      return replaceLocalImages(
+        rawCurrentHtml,
+        "🖼️ Imagen local no disponible en modo web"
+      );
+    }
+    return rawCurrentHtml;
+  }, [rawCurrentHtml, adapters?.isWeb]);
 
   // Renderizar siguiente diapositiva (para PresenterMode)
   const nextSlide =
     presentation && currentIndex < presentation.getTotalSlides() - 1
       ? presentation.getSlideAt(currentIndex + 1)
       : null;
-  const nextHtml = nextSlide ? renderer.render(nextSlide).html : null;
+  const rawNextHtml = nextSlide ? renderer.render(nextSlide).html : null;
+
+  const nextHtml = useMemo(() => {
+    if (adapters?.isWeb && rawNextHtml) {
+      return replaceLocalImages(rawNextHtml, "🖼️ Imagen local no disponible en modo web");
+    }
+    return rawNextHtml;
+  }, [rawNextHtml, adapters?.isWeb]);
 
   // Resolver iconos para el Dock
   const dockSlides = presentation
@@ -128,28 +174,29 @@ export default function App() {
 
   // --- Handlers ---
 
-  const handleLoad = useCallback(async (path: string, type: "file" | "directory") => {
-    dispatch({ type: "LOAD_START" });
-    try {
-      const { LoadPresentationUseCase } = await import("@/application");
-      const { TauriFileSystemAdapter } =
-        await import("@/infrastructure/TauriFileSystemAdapter");
-      const fs = new TauriFileSystemAdapter();
-      const useCase = new LoadPresentationUseCase(fs, parser, iconResolver);
-      const result = await useCase.execute({ path, type });
+  const handleLoad = useCallback(
+    async (path: string, type: "file" | "directory") => {
+      if (!adapters) return;
+      dispatch({ type: "LOAD_START" });
+      try {
+        const { LoadPresentationUseCase } = await import("@/application");
+        const useCase = new LoadPresentationUseCase(adapters.fileSystem, parser);
+        const result = await useCase.execute({ path, type });
 
-      if (result.success && result.presentation) {
-        dispatch({ type: "LOAD_SUCCESS", presentation: result.presentation });
-      } else {
-        dispatch({ type: "LOAD_ERROR", error: result.error ?? "Error desconocido" });
+        if (result.success && result.presentation) {
+          dispatch({ type: "LOAD_SUCCESS", presentation: result.presentation });
+        } else {
+          dispatch({ type: "LOAD_ERROR", error: result.error ?? "Error desconocido" });
+        }
+      } catch (err) {
+        dispatch({
+          type: "LOAD_ERROR",
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
-    } catch (err) {
-      dispatch({
-        type: "LOAD_ERROR",
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
-  }, []);
+    },
+    [adapters]
+  );
 
   const handleNext = useCallback(() => {
     if (presentation && currentIndex < presentation.getTotalSlides() - 1) {
@@ -192,17 +239,44 @@ export default function App() {
 
   // --- Render ---
 
-  // Sin presentación: mostrar loader
+  // Pantalla de carga mientras se inicializan los adaptadores
+  if (!adapters) {
+    return (
+      <ThemeProvider configUseCase={configUseCase}>
+        <I18nProvider configUseCase={configUseCase}>
+          <div className="h-screen bg-white dark:bg-gray-900 transition-colors flex items-center justify-center">
+            <div className="text-gray-400 dark:text-gray-500 text-sm">Cargando...</div>
+          </div>
+        </I18nProvider>
+      </ThemeProvider>
+    );
+  }
+
+  // Sin presentación: mostrar loader según el entorno
   if (!presentation) {
     return (
       <ThemeProvider configUseCase={configUseCase}>
         <I18nProvider configUseCase={configUseCase}>
           <div className="h-screen bg-white dark:bg-gray-900 transition-colors">
-            <PresentationLoader onLoad={handleLoad} isLoading={isLoading} error={error} />
+            {adapters.isWeb ? (
+              <WebPresentationLoader
+                onLoad={handleLoad}
+                webFs={adapters.webFileSystem!}
+                isLoading={isLoading}
+                error={error}
+              />
+            ) : (
+              <PresentationLoader
+                onLoad={handleLoad}
+                isLoading={isLoading}
+                error={error}
+              />
+            )}
             <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
               <LanguageSelector />
               <ThemeToggle />
             </div>
+            {adapters.isWeb && <WebModeBadge />}
           </div>
         </I18nProvider>
       </ThemeProvider>
@@ -255,6 +329,9 @@ export default function App() {
               />
             </>
           )}
+
+          {/* Badge de modo web */}
+          {adapters.isWeb && <WebModeBadge />}
         </div>
       </I18nProvider>
     </ThemeProvider>

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:web": "VITE_BUILD_TARGET=web tsc && VITE_BUILD_TARGET=web vite build",
     "preview": "vite preview",
     "test": "vitest --run",
     "test:watch": "vitest",

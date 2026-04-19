@@ -30,3 +30,12 @@ Mantén las explicaciones concisas pero claras. El objetivo es que el desarrolla
 - El usuario lidera la ejecución de comandos
 - Kiro propone, explica y guía
 - Solo ejecutar comandos cuando el usuario diga explícitamente "ejecútalo", "hazlo tú", "run it" o similar
+
+## Regla 4: Cero costos en AWS
+
+- NUNCA crear recursos en AWS sin antes verificar el estado del Free Tier de la cuenta del usuario
+- SIEMPRE informar al usuario si un servicio o acción puede generar costos, por mínimos que sean
+- Antes de crear cualquier recurso AWS, verificar: antigüedad de la cuenta, uso actual del Free Tier, y si el servicio tiene Free Tier permanente o de 12 meses
+- Si existe riesgo de costo, DETENER y consultar al usuario antes de proceder
+- Preferir siempre servicios con Free Tier permanente sobre los de 12 meses
+- Documentar el costo estimado de cada recurso AWS que se proponga crear

@@ -29,5 +29,13 @@
   "error.unknown": "Unknown error",
   "icons.mode": "Icon mode",
   "icons.varied": "Varied",
-  "icons.content": "By content"
+  "icons.content": "By content",
+  "web.badge": "Web",
+  "web.openFile": "Select .md file",
+  "web.openFolder": "Select folder",
+  "web.dragHint": "Drag .md files here or use the buttons",
+  "web.folderNotSupported": "Folder selection requires Chrome, Edge or Firefox",
+  "web.desktopOnly": "This feature requires the desktop version",
+  "web.localImagePlaceholder": "Local image not available in web mode",
+  "web.unsupportedFileType": "Unsupported file type. Only .md, .markdown and .txt files are accepted"
 }

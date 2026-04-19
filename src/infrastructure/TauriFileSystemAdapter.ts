@@ -13,10 +13,11 @@ export class TauriFileSystemAdapter implements IFileSystemAdapter {
     try {
       return await readTextFile(path);
     } catch (error) {
-      throw new Error(
-        `No se pudo leer el archivo: ${path}. ${error instanceof Error ? error.message : String(error)}`,
-        { cause: error }
+      const err = new Error(
+        `No se pudo leer el archivo: ${path}. ${error instanceof Error ? error.message : String(error)}`
       );
+      err.cause = error;
+      throw err;
     }
   }
 
@@ -34,10 +35,11 @@ export class TauriFileSystemAdapter implements IFileSystemAdapter {
         };
       });
     } catch (error) {
-      throw new Error(
-        `No se pudo leer el directorio: ${path}. ${error instanceof Error ? error.message : String(error)}`,
-        { cause: error }
+      const err = new Error(
+        `No se pudo leer el directorio: ${path}. ${error instanceof Error ? error.message : String(error)}`
       );
+      err.cause = error;
+      throw err;
     }
   }
 

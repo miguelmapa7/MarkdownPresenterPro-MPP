@@ -1,7 +1,6 @@
 import { Presentation, Slide } from "@/domain";
 import type { SlideContentType } from "@/domain";
 import type { IMarkdownParser } from "@/domain";
-import type { IIconResolver } from "@/domain";
 import type { IFileSystemAdapter } from "@/infrastructure/IFileSystemAdapter";
 
 /**
@@ -32,8 +31,7 @@ export interface LoadPresentationResult {
 export class LoadPresentationUseCase {
   constructor(
     private readonly fileSystem: IFileSystemAdapter,
-    private readonly parser: IMarkdownParser,
-    private readonly iconResolver: IIconResolver
+    private readonly parser: IMarkdownParser
   ) {}
 
   async execute(input: LoadPresentationInput): Promise<LoadPresentationResult> {

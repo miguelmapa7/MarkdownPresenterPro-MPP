@@ -116,10 +116,18 @@ export function createDefaultRegistry(): StrategyRegistry {
  * para extensibilidad futura. Mide el tiempo de renderizado.
  */
 export class RenderMarkdownUseCase {
+  private readonly strategyRegistry: StrategyRegistry;
+
   constructor(
     private readonly parser: IMarkdownParser,
-    private readonly _strategyRegistry: StrategyRegistry
-  ) {}
+    strategyRegistry: StrategyRegistry
+  ) {
+    this.strategyRegistry = strategyRegistry;
+  }
+
+  getStrategyRegistry(): StrategyRegistry {
+    return this.strategyRegistry;
+  }
 
   render(slide: Slide): RenderedSlide {
     // Usar caché si existe

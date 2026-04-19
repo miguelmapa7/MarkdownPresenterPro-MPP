@@ -9,6 +9,8 @@ export { FloatingDock } from "./FloatingDock";
 export { PresenterMode } from "./PresenterMode";
 export { formatSlideCounter } from "./formatSlideCounter";
 export { PresentationLoader } from "./PresentationLoader";
+export { WebPresentationLoader } from "./WebPresentationLoader";
+export { WebModeBadge } from "./WebModeBadge";
 export { ThemeProvider, useTheme } from "./ThemeProvider";
 export { ThemeToggle } from "./ThemeToggle";
 export { I18nProvider, useTranslation } from "./I18nProvider";

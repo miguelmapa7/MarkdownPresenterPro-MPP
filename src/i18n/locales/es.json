@@ -29,5 +29,13 @@
   "error.unknown": "Error desconocido",
   "icons.mode": "Modo de iconos",
   "icons.varied": "Variados",
-  "icons.content": "Por contenido"
+  "icons.content": "Por contenido",
+  "web.badge": "Web",
+  "web.openFile": "Seleccionar archivo .md",
+  "web.openFolder": "Seleccionar carpeta",
+  "web.dragHint": "Arrastra archivos .md aquí o usa los botones",
+  "web.folderNotSupported": "La selección de carpetas requiere Chrome, Edge o Firefox",
+  "web.desktopOnly": "Esta funcionalidad requiere la versión de escritorio",
+  "web.localImagePlaceholder": "Imagen local no disponible en modo web",
+  "web.unsupportedFileType": "Tipo de archivo no soportado. Solo se aceptan archivos .md, .markdown y .txt"
 }
