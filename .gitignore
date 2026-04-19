@@ -22,3 +22,7 @@ Thumbs.db
 # Env
 .env
 .env.local
+
+# AWS CLI installer (temporal)
+awscliv2.zip
+aws/
