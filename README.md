@@ -2,7 +2,7 @@
 
 Aplicación multiplataforma que transforma archivos Markdown en presentaciones interactivas y profesionales. Funciona como app de escritorio (Windows, macOS, Linux) y como aplicación web desplegada en AWS.
 
-🌐 **Demo Web**: [https://YOUR_CLOUDFRONT_URL](https://YOUR_CLOUDFRONT_URL)
+🌐 **Demo Web**: Configurar URL de CloudFront después del despliegue
 
 ## Características
 
@@ -145,8 +145,8 @@ La versión web se despliega en AWS S3 + CloudFront (Free Tier):
 ```bash
 # Build + deploy
 npm run build:web
-aws s3 sync dist-web/ s3://YOUR_S3_BUCKET --delete
-aws cloudfront create-invalidation --distribution-id YOUR_CLOUDFRONT_ID --paths "/index.html"
+aws s3 sync dist-web/ s3://$S3_BUCKET_NAME --delete
+aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/index.html"
 ```
 
 El CI/CD despliega automáticamente en cada push a `main`.

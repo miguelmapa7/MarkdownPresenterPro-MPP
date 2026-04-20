@@ -30,7 +30,7 @@ Almacena los archivos estáticos de la versión web: `index.html`, archivos Java
 
 ```bash
 # Crear bucket S3 con nombre único globalmente
-aws s3 mb s3://YOUR_S3_BUCKET --region us-east-1
+aws s3 mb s3://<TU_BUCKET_NAME> --region us-east-1
 ```
 
 - `mb` = make bucket
@@ -42,7 +42,7 @@ aws s3 mb s3://YOUR_S3_BUCKET --region us-east-1
 ```bash
 # Bloquear todo acceso público al bucket
 aws s3api put-public-access-block \
-  --bucket YOUR_S3_BUCKET \
+  --bucket <TU_BUCKET_NAME> \
   --public-access-block-configuration \
     BlockPublicAcls=true,\
     IgnorePublicAcls=true,\
@@ -50,33 +50,24 @@ aws s3api put-public-access-block \
     RestrictPublicBuckets=true
 ```
 
-- Nadie puede acceder directamente al bucket por URL de S3
-- Solo CloudFront puede leer los archivos (via OAC)
-- Esto es una práctica de seguridad obligatoria
-
 **Subir archivos:**
 
 ```bash
 # Sincronizar archivos locales con el bucket
-aws s3 sync dist-web/ s3://YOUR_S3_BUCKET --delete
+aws s3 sync dist-web/ s3://<TU_BUCKET_NAME> --delete
 ```
-
-- `sync` = sube solo archivos nuevos o modificados
-- `--delete` = elimina del bucket archivos que ya no existen localmente
-- `dist-web/` = carpeta generada por `npm run build:web`
 
 **Verificar contenido:**
 
 ```bash
 # Listar archivos en el bucket
-aws s3 ls s3://YOUR_S3_BUCKET --recursive
+aws s3 ls s3://<TU_BUCKET_NAME> --recursive
 ```
 
 ### Costos:
 
 - Free Tier (12 meses): 5 GB almacenamiento, 20,000 GET requests/mes
 - Nuestra app: ~500 KB — 0.01% del límite
-- Después del Free Tier: ~$0.023/GB/mes = ~$0.00001/mes para 500KB
 
 ---
 
@@ -84,11 +75,11 @@ aws s3 ls s3://YOUR_S3_BUCKET --recursive
 
 ### ¿Qué es?
 
-CloudFront es una Red de Distribución de Contenido (CDN). Copia tus archivos en servidores distribuidos por todo el mundo ("edge locations"). Cuando un usuario accede a tu app, CloudFront le sirve los archivos desde el servidor más cercano, reduciendo la latencia.
+CloudFront es una Red de Distribución de Contenido (CDN). Copia tus archivos en servidores distribuidos por todo el mundo. Cuando un usuario accede a tu app, CloudFront le sirve los archivos desde el servidor más cercano.
 
 ### ¿Para qué lo usamos en MPP?
 
-- **HTTPS**: CloudFront provee certificado SSL gratuito (`*.cloudfront.net`)
+- **HTTPS**: Certificado SSL gratuito
 - **CDN**: Baja latencia global
 - **Caché**: Reduce requests a S3
 - **Compresión**: gzip/brotli automático
@@ -99,52 +90,34 @@ CloudFront es una Red de Distribución de Contenido (CDN). Copia tus archivos en
 **Crear distribución (desde la consola web):**
 
 1. CloudFront → Create distribution
-2. Origin: bucket S3 `YOUR_S3_BUCKET`
-3. Origin Access Control (OAC): habilitado — solo CloudFront accede al bucket
+2. Origin: tu bucket S3
+3. Origin Access Control (OAC): habilitado
 4. Default root object: `index.html`
 5. Compresión: habilitada
 
-**Configurar páginas de error para SPA:**
-Nuestra app es una Single Page Application. Cuando el usuario navega a una ruta como `/slides/3`, no existe un archivo `/slides/3` en S3. Sin configuración, CloudFront devolvería un error 403. Con las páginas de error personalizadas, redirige a `index.html` y React maneja la ruta.
+**Páginas de error para SPA:**
 
 | Error HTTP      | Redirige a    | Código de respuesta |
 | --------------- | ------------- | ------------------- |
 | 403 (Forbidden) | `/index.html` | 200 (OK)            |
 | 404 (Not Found) | `/index.html` | 200 (OK)            |
 
-**Configurar default root object:**
-En General → Settings → Edit → Default root object: `index.html`
-Esto hace que cuando alguien accede a `https://d1234.cloudfront.net/`, CloudFront sirva `index.html` automáticamente.
-
 **Invalidar caché después de un despliegue:**
 
 ```bash
-# Invalidar caché de index.html para que usuarios vean la versión nueva
 aws cloudfront create-invalidation \
-  --distribution-id YOUR_CLOUDFRONT_ID \
+  --distribution-id <TU_DISTRIBUTION_ID> \
   --paths "/index.html"
-```
-
-- Solo invalidamos `index.html` porque los archivos JS/CSS tienen hash en el nombre
-- Cuando cambias el código, Vite genera nuevos hashes → nuevos archivos → no necesitan invalidación
-- `index.html` referencia los nuevos archivos con hash → al invalidarlo, los usuarios cargan la versión nueva
-
-**Ver estado de la distribución:**
-
-```bash
-# Ver detalles de la distribución
-aws cloudfront get-distribution --id YOUR_CLOUDFRONT_ID
 ```
 
 ### URL de acceso:
 
-Tu app web estará disponible en: `https://XXXXXX.cloudfront.net`
+Tu app web estará disponible en: `https://<ID>.cloudfront.net`
 (El dominio exacto se muestra en la consola de CloudFront → Distribution domain name)
 
 ### Costos:
 
 - Free Tier (siempre, no expira): 1 TB transferencia/mes, 10,000,000 requests/mes
-- Nuestra app: ~500KB por carga × pocas visitas = prácticamente $0
 
 ---
 
@@ -152,11 +125,7 @@ Tu app web estará disponible en: `https://XXXXXX.cloudfront.net`
 
 ### ¿Qué es?
 
-IAM gestiona quién puede hacer qué en tu cuenta de AWS. Permite crear usuarios con permisos específicos en vez de usar la cuenta raíz (que tiene acceso a todo).
-
-### ¿Para qué lo usamos en MPP?
-
-Creamos un usuario `mpp-deploy` con permisos mínimos: solo puede subir archivos a nuestro bucket S3 e invalidar caché de CloudFront. No puede crear otros recursos, borrar la cuenta, ni acceder a otros servicios.
+IAM gestiona quién puede hacer qué en tu cuenta de AWS. Permite crear usuarios con permisos específicos.
 
 ### Configuración implementada:
 
@@ -176,16 +145,13 @@ Creamos un usuario `mpp-deploy` con permisos mínimos: solo puede subir archivos
         "s3:GetBucketPolicy",
         "s3:GetBucketPublicAccessBlock"
       ],
-      "Resource": "arn:aws:s3:::YOUR_S3_BUCKET"
+      "Resource": "arn:aws:s3:::<TU_BUCKET_NAME>"
     },
     {
       "Sid": "S3DeployAccess",
       "Effect": "Allow",
       "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:ListBucket"],
-      "Resource": [
-        "arn:aws:s3:::YOUR_S3_BUCKET",
-        "arn:aws:s3:::YOUR_S3_BUCKET/*"
-      ]
+      "Resource": ["arn:aws:s3:::<TU_BUCKET_NAME>", "arn:aws:s3:::<TU_BUCKET_NAME>/*"]
     },
     {
       "Sid": "CloudFrontAccess",
@@ -203,117 +169,60 @@ Creamos un usuario `mpp-deploy` con permisos mínimos: solo puede subir archivos
 }
 ```
 
-**Principio de mínimo privilegio**: El usuario solo tiene los permisos estrictamente necesarios. Si las credenciales se filtran, el atacante solo puede subir archivos a un bucket específico — no puede borrar la cuenta ni acceder a otros servicios.
-
-**Configurar credenciales en la terminal:**
-
-```bash
-aws configure
-# AWS Access Key ID: (tu access key)
-# AWS Secret Access Key: (tu secret key)
-# Default region name: us-east-1
-# Default output format: json
-```
-
 ### Costos:
 
-- Siempre gratis. IAM no tiene costo.
+- Siempre gratis.
 
 ---
 
 ## Servicio 4: AWS Budgets (Presupuestos)
 
-### ¿Qué es?
-
-AWS Budgets permite crear alertas de gasto. Te notifica por email si tus costos superan un umbral definido.
-
-### ¿Para qué lo usamos en MPP?
-
-Configuramos un presupuesto de "gasto cero" que envía una alerta si cualquier cargo supera $0.01 USD. Es una red de seguridad para evitar costos inesperados.
-
-### Configuración implementada:
-
-- Nombre: `My Zero-Spend Budget`
-- Tipo: Presupuesto de gasto cero
-- Umbral: $1.00 USD (alerta al superar $0.01)
-- Notificación: Email
-
-### Costos:
-
-- Los primeros 2 presupuestos son gratis. Solo se cobra a partir del tercero.
+Presupuesto de "gasto cero" que envía alerta por email si cualquier cargo supera $0.01 USD. Los primeros 2 presupuestos son gratis.
 
 ---
 
 ## Proceso Completo de Despliegue
 
-### Despliegue manual (paso a paso):
+### Despliegue manual:
 
 ```bash
-# Paso 1: Construir la versión web
 npm run build:web
-
-# Paso 2: Verificar que se generaron los archivos
-ls dist-web/
-
-# Paso 3: Subir a S3
-aws s3 sync dist-web/ s3://YOUR_S3_BUCKET --delete
-
-# Paso 4: Invalidar caché de CloudFront
-aws cloudfront create-invalidation \
-  --distribution-id YOUR_CLOUDFRONT_ID \
-  --paths "/index.html"
-
-# Paso 5: Verificar (esperar ~2 minutos para propagación)
-# Abrir en el navegador: https://XXXXXX.cloudfront.net
+aws s3 sync dist-web/ s3://$S3_BUCKET_NAME --delete
+aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/index.html"
 ```
 
 ### Despliegue automático (CI/CD):
 
-Cada push a la rama `main` ejecuta automáticamente los pasos 1-4 via GitHub Actions. Los secrets necesarios en GitHub:
+Cada push a `main` ejecuta automáticamente via GitHub Actions. Secrets necesarios:
 
-| Secret                       | Valor                               | Dónde obtenerlo                                 |
-| ---------------------------- | ----------------------------------- | ----------------------------------------------- |
-| `AWS_ACCESS_KEY_ID`          | Access key del usuario `mpp-deploy` | IAM → Users → mpp-deploy → Security credentials |
-| `AWS_SECRET_ACCESS_KEY`      | Secret key del usuario `mpp-deploy` | Se mostró al crear la access key                |
-| `S3_BUCKET_NAME`             | `YOUR_S3_BUCKET`           | S3 → nombre del bucket                          |
-| `CLOUDFRONT_DISTRIBUTION_ID` | `YOUR_CLOUDFRONT_ID`                     | CloudFront → Distribution ID                    |
-
----
-
-## Política de Caché
-
-| Tipo de archivo  | Cache-Control                 | TTL   | ¿Por qué?                                               |
-| ---------------- | ----------------------------- | ----- | ------------------------------------------------------- |
-| `index.html`     | `max-age=0, must-revalidate`  | 0     | Siempre debe ser la versión más reciente                |
-| `assets/*.js`    | `max-age=31536000, immutable` | 1 año | Hash en el nombre — si cambia el código, cambia el hash |
-| `assets/*.css`   | `max-age=31536000, immutable` | 1 año | Hash en el nombre — si cambia el código, cambia el hash |
-| Imágenes/fuentes | `max-age=31536000`            | 1 año | Raramente cambian                                       |
-
-### ¿Cómo funciona?
-
-Vite genera archivos con hash: `index-a1b2c3.js`. Cuando cambias el código, el hash cambia → nuevo archivo → el navegador lo descarga. El `index.html` (sin hash) referencia los archivos con hash. Al invalidar `index.html`, los usuarios cargan la nueva versión que apunta a los nuevos archivos.
+| Secret                       | Descripción                          |
+| ---------------------------- | ------------------------------------ |
+| `AWS_ACCESS_KEY_ID`          | Access key del usuario IAM de deploy |
+| `AWS_SECRET_ACCESS_KEY`      | Secret key del usuario IAM de deploy |
+| `S3_BUCKET_NAME`             | Nombre del bucket S3                 |
+| `CLOUDFRONT_DISTRIBUTION_ID` | ID de la distribución CloudFront     |
 
 ---
 
 ## Seguridad
 
-| Medida                           | Implementación                                         |
-| -------------------------------- | ------------------------------------------------------ |
-| Acceso público bloqueado en S3   | `put-public-access-block` con las 4 opciones activadas |
-| Solo CloudFront accede a S3      | Origin Access Control (OAC)                            |
-| HTTPS obligatorio                | Certificado CloudFront (`*.cloudfront.net`)            |
-| Usuario IAM con permisos mínimos | Política `MPP-Deploy-Policy`                           |
-| Alerta de costos                 | Presupuesto de gasto cero con notificación email       |
-| Credenciales no en código        | GitHub Secrets para CI/CD                              |
+| Medida                           | Implementación                               |
+| -------------------------------- | -------------------------------------------- |
+| Acceso público bloqueado en S3   | `put-public-access-block` con las 4 opciones |
+| Solo CloudFront accede a S3      | Origin Access Control (OAC)                  |
+| HTTPS obligatorio                | Certificado CloudFront                       |
+| Usuario IAM con permisos mínimos | Política `MPP-Deploy-Policy`                 |
+| Alerta de costos                 | Presupuesto de gasto cero                    |
+| Credenciales no en código        | GitHub Secrets para CI/CD                    |
 
 ---
 
 ## Resumen de Costos
 
-| Servicio   | Free Tier | Límite              | Nuestro uso   | Costo mensual |
-| ---------- | --------- | ------------------- | ------------- | ------------- |
-| S3         | 12 meses  | 5 GB + 20K GET      | ~500 KB       | $0            |
-| CloudFront | Siempre   | 1 TB + 10M requests | Mínimo        | $0            |
-| IAM        | Siempre   | Ilimitado           | 1 usuario     | $0            |
-| Budgets    | Siempre   | 2 presupuestos      | 1 presupuesto | $0            |
-| **Total**  |           |                     |               | **$0**        |
+| Servicio   | Free Tier          | Nuestro uso   | Costo  |
+| ---------- | ------------------ | ------------- | ------ |
+| S3         | 12 meses (5 GB)    | ~500 KB       | $0     |
+| CloudFront | Siempre (1 TB)     | Mínimo        | $0     |
+| IAM        | Siempre            | 1 usuario     | $0     |
+| Budgets    | Siempre (2 gratis) | 1 presupuesto | $0     |
+| **Total**  |                    |               | **$0** |
