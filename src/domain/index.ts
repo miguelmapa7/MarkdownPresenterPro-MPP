@@ -9,3 +9,10 @@ export { MarkdownParser } from "./MarkdownParser";
 export type { IMarkdownParser } from "./MarkdownParser";
 export { IconResolver } from "./IconResolver";
 export type { IIconResolver, IconResult, IconMode } from "./IconResolver";
+export { SecurityLogger } from "./SecurityLogger";
+export type { ISecurityLogger, SecurityEvent, SecurityEventType } from "./SecurityLogger";
+export {
+  default as rehypeSanitizeLogger,
+  getSecurityLogger,
+  resetSecurityLogger,
+} from "./rehypeSanitizeLogger";

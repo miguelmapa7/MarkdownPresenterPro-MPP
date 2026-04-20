@@ -5,8 +5,11 @@ import remarkFrontmatter from "remark-frontmatter";
 import remarkStringify from "remark-stringify";
 import remarkRehype from "remark-rehype";
 import rehypeHighlight from "rehype-highlight";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
 import type { Root as MdastRoot } from "mdast";
+import type { Schema } from "hast-util-sanitize";
+import rehypeSanitizeLogger from "./rehypeSanitizeLogger";
 
 /**
  * Interfaz del parser de Markdown.
@@ -24,11 +27,31 @@ export interface IMarkdownParser {
 }
 
 /**
+ * Esquema de sanitización personalizado para rehype-sanitize.
+ *
+ * Extiende el esquema por defecto (basado en el modelo de GitHub) para
+ * preservar las clases CSS generadas por rehype-highlight (syntax highlighting).
+ * Todos los elementos y atributos no incluidos se eliminan automáticamente,
+ * neutralizando scripts, event handlers, iframes, etc.
+ */
+const sanitizeSchema: Schema = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    code: [
+      ...(defaultSchema.attributes?.code ?? []),
+      ["className", /^hljs-/, /^language-/],
+    ],
+    span: [...(defaultSchema.attributes?.span ?? []), ["className", /^hljs-/]],
+  },
+};
+
+/**
  * Implementación del parser usando el ecosistema Unified.js.
  *
  * Configura 3 pipelines de procesamiento:
  * 1. Parseo: Markdown → AST (remarkParse + remarkGfm + remarkFrontmatter)
- * 2. Renderizado: Markdown → HTML (parseo + remarkRehype + rehypeHighlight + rehypeStringify)
+ * 2. Renderizado: Markdown → HTML (parseo + remarkRehype + rehypeHighlight + rehypeSanitize + rehypeStringify)
  * 3. Formateo: AST → Markdown (remarkStringify + remarkGfm) para round-trip
  */
 export class MarkdownParser implements IMarkdownParser {
@@ -38,13 +61,15 @@ export class MarkdownParser implements IMarkdownParser {
     .use(remarkGfm)
     .use(remarkFrontmatter);
 
-  /** Pipeline de renderizado: Markdown → HTML */
+  /** Pipeline de renderizado: Markdown → HTML (con sanitización y logging) */
   private readonly htmlProcessor = unified()
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkFrontmatter)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeHighlight)
+    .use(rehypeSanitizeLogger)
+    .use(rehypeSanitize, sanitizeSchema)
     .use(rehypeStringify);
 
   /** Pipeline de formateo: AST → Markdown */

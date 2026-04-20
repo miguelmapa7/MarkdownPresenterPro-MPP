@@ -10,3 +10,11 @@ export type { RuntimeEnvironment } from "./EnvironmentDetector";
 export { createAdapters } from "./AdapterFactory";
 export type { AdapterSet } from "./AdapterFactory";
 export { WebFileSystemAdapter } from "./WebFileSystemAdapter";
+export { InputValidator } from "./InputValidator";
+export type { IInputValidator, ValidationResult } from "./InputValidator";
+export {
+  ALLOWED_EXTENSIONS,
+  MAX_FILE_SIZE,
+  ALLOWED_MIME_TYPES,
+  MAX_FILE_COUNT,
+} from "./InputValidator";
